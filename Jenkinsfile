@@ -1,0 +1,1 @@
+buildDockerImage([imageName: "scRNAseq", dockerContext: "docker", dockerFile: "docker/Dockerfile", pushRegistryNamespace: "obenauf", pushRegistry: "docker.artifactory.imp.ac.at", testCmd: null, pushBranches:["main"]])

@@ -1,2 +1,2 @@
 # nf-scRNASeq
-nextflow singlecell RNA-Seq workflow
+Nextflow singlecell RNA-Seq workflow
