@@ -1,9 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 
-""" 
+"""
 Provide a command line tool to validate and transform tabular samplesheets.
-See https://github.com/ObenaufLab/CaTCHseq/blob/dev/bin/check_samplesheet.py for template
 """
 
 
