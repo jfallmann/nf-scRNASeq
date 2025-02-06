@@ -109,9 +109,9 @@ def helpMessage() {
         --marker                RDS file of cellcycle markers (default: ${marker}, NamedList with gene names for each stage [G1S, S, G2M, M, MG1, G0], S and G2M are needed)        
         --outputDir             specifies the output directory (default: ${outputDir})
         --reportsDir            specifies the reports directory.(default: ${reportsDir})
-        --scriptDirR            specifies the path to the R scripts directory, do not change if running with docker, otherwise set to path on sccatch git repo.(default: /tools/scripts/R/ which is valid for docker instance; set to \${absDir}/sccatch/docker/scripts/R/ for instances not running docker)
-        --scriptDirPy            specifies the path to the Python scripts directory, do not change if running with docker, otherwise set to path on sccatch git repo.(default: /tools/scripts/python/ which is valid for docker instance; set to \${absDir}/sccatch/docker/scripts/python/ for instances not running docker)
-        --binDir            specifies the path to the binary directory, do not change if running with docker, otherwise set to path on sccatch git repo.(default: /usr/bin/local which is valid for docker instance; set to '' for instances not running docker)
+        --scriptDirR            specifies the path to the R scripts directory, do not change if running with docker, otherwise set to path on nf-scRNASeq git repo.(default: /tools/scripts/R/ which is valid for docker instance; set to \${absDir}/nf-scRNASeq/docker/scripts/R/ for instances not running docker)
+        --scriptDirPy            specifies the path to the Python scripts directory, do not change if running with docker, otherwise set to path on nf-scRNASeq git repo.(default: /tools/scripts/python/ which is valid for docker instance; set to \${absDir}/nf-scRNASeq/docker/scripts/python/ for instances not running docker)
+        --binDir            specifies the path to the binary directory, do not change if running with docker, otherwise set to path on nf-scRNASeq git repo.(default: /usr/bin/local which is valid for docker instance; set to '' for instances not running docker)
         --help                  print this help message
 
     """.stripIndent()
@@ -655,10 +655,10 @@ process preprocessSingleCellData{
     script:
     if (filtering){
         featurematrix = "filtered_feature_bc_matrix"
-        outname = 'scCaTCH.prefiltered'
+        outname = 'nf-scRNASeq.prefiltered'
     }else{
         featurematrix = "raw_feature_bc_matrix"
-        outname = 'scCaTCH'
+        outname = 'nf-scRNASeq'
     }
     """ 
     SAMPLES=''    

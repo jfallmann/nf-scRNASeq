@@ -18,8 +18,7 @@ RUN apt-get update \
 		fonts-texgyre \
 		python3-pip libxml2-dev libssl-dev libcurl4-openssl-dev \
 		libv8-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev \
-		libpng-dev libtiff5-dev libjpeg-dev software-properties-common dirmngr \
-		&& apt-get clean \
+		libpng-dev libtiff5-dev libjpeg-dev software-properties-common dirmngr \		
 		&& apt-get autoremove -y \
 		&& apt-get autoclean -y 
 
