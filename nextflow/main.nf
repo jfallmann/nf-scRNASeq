@@ -556,7 +556,10 @@ process star_mapping{
     }
     // Check expected cell count
     if (cells_expected != "NA"){
-        starparams = starparams + ' --nExpectedCells ' + cells_expected.replaceAll('!', '')
+        cellsexpCR = cells_expected.replaceAll('!', '') + ' 0.99 10'
+        cellsexpED = cells_expected.replaceAll('!', '') + ' 0.99 10 45000 90000 500 0.01 20000 0.01 10000'
+        starparams = starparams.replaceAll('CellRanger2.2', 'CellRanger2.2 '+cellsexpCR).replaceAll('EmptyDrops_CR', 'EmptyDrops_CR '+cellsexpED)
+        extraparams = extraparams.replaceAll('CellRanger2.2', 'CellRanger2.2 '+cellsexpCR).replaceAll('EmptyDrops_CR', 'EmptyDrops_CR '+cellsexpED)
     }
     
     // Build params
@@ -612,6 +615,7 @@ process star_mapping{
     """
 
 }
+
 
 /************************************************************************
                     STEP 2: Generate SingleCellExperiment/Seurat objects
