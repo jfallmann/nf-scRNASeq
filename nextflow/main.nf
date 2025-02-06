@@ -606,8 +606,8 @@ process star_mapping{
     mv ${of} ${gb}
     samtools index ${gb}
     mv ${sampleName}.Solo.out ${sampleName}
-    gzip ${sampleName}/${sfeature}/filtered/*
-    gzip ${sampleName}/${sfeature}/raw/*
+    gzip -f ${sampleName}/*/filtered/*
+    gzip -f ${sampleName}/*/raw/*
     ln -s ${sampleName}/${sfeature}/filtered ${sampleName}_filtered_feature_bc_matrix
     ln -s ${sampleName}/${sfeature}/raw ${sampleName}_raw_feature_bc_matrix
     ln -s ${sampleName}/${sfeature}/filtered/barcodes.tsv.gz ${sampleName}_filtered_barcodes.tsv.gz
@@ -646,10 +646,10 @@ process preprocessSingleCellData{
         path(gtf)
 
     output:
-        path("scCaTCH*_filtered_seurat_sce.rds.gz"), emit: basic_seurat_sce
-        path("scCaTCH*_filtered_sce.rds.gz"), emit: basic_sce
-        path("scCaTCH*_unfiltered_seurat_sce.rds.gz"), emit: basic_raw_seurat_sce
-        path("scCaTCH*_unfiltered_sce.rds.gz"), emit: basic_raw_sce
+        path("SingleCell*_filtered_seurat_sce.rds.gz"), emit: basic_seurat_sce
+        path("SingleCell*_filtered_sce.rds.gz"), emit: basic_sce
+        path("SingleCell*_unfiltered_seurat_sce.rds.gz"), emit: basic_raw_seurat_sce
+        path("SingleCell*_unfiltered_sce.rds.gz"), emit: basic_raw_sce
         path("*.pdf"), emit: basic_sce_qc, optional: true
 
     script:
@@ -715,9 +715,9 @@ process createOverviewPlots{
 
     script:
     if (filtering){
-        outname = 'scCaTCH.prefiltered'
+        outname = 'SingleCell.prefiltered'
     }else{
-        outname = 'scCaTCH'
+        outname = 'SingleCell'
     }
     """
     Rscript --vanilla ${scriptDirR}create_overview_plots.R \
@@ -759,9 +759,9 @@ process identifyDEGenes{
 
     script:
      if (filtering){
-        outname = 'scCaTCH.prefiltered'
+        outname = 'SingleCell.prefiltered'
     }else{
-        outname = 'scCaTCH'
+        outname = 'SingleCell'
     }
     """
     Rscript --vanilla ${scriptDirR}identify_de_genes.R \
@@ -916,8 +916,6 @@ workflow{
             }
         }
     
-        Ch_analytics_in =  Ch_cell_ids.join(mergeBarcodesInChunks.out.merged_libraries, by: 0).join(collapseAndFilterBarcodes.out.collapsed_libraries, by: 0).join(resolveMultiplets.out.resolved_multiplets_libraries, by: 0)
-
         /**************************************************************
                 STEP 2: Generate SingleCellExperiment object
         ***************************************************************/
