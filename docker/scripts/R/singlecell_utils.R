@@ -307,11 +307,11 @@ read_gtf <- function(anno) {
 }
 
 
-normalize_Seurat <- function(sce, normalization.method = "LogNormalize", scale.factor = 10000, dplyr::selection.method = "vst", nfeatures = 2000, ...) {
+normalize_Seurat <- function(sce, normalization.method = "LogNormalize", scale.factor = 10000, selection.method = "vst", nfeatures = 2000, ...) {
     print("   Normalizing and scaling SCE ...")
 
     sce <- NormalizeData(sce, normalization.method = normalization.method, scale.factor = scale.factor)
-    sce <- FindVariableFeatures(sce, dplyr::selection.method = dplyr::selection.method, nfeatures = nfeatures)
+    sce <- FindVariableFeatures(sce, selection.method = selection.method, nfeatures = nfeatures)
     sce <- ScaleData(sce, ...)
 
     return(sce)
