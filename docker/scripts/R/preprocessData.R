@@ -116,6 +116,9 @@ is.mitochondrial <- grepl(
     perl = TRUE
 )
 
+# Remove 0 count rows from sce
+sce <- sce[, colSums(counts(sce)) > 0]
+
 sce <- sce %>%
     scater::logNormCounts() %>%
     scater::addPerCellQC(subsets = list(MT = is.mitochondrial)) %>%
