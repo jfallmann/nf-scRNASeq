@@ -253,12 +253,12 @@ create_SCEs <- function(smpl, data10X, annotation) {
         for (i in 1:length(samplelist)) {
             if (i == 1) {
                 print("Loading first sce dataset")
-                sl <- create_SCEs(samplelist[i], data10Xs[i], bcs[i], anno)
+                sl <- create_SCEs(samplelist[i], data10Xs[i], anno)
                 firstsce <- sl$sce
                 firstseurat <- sl$seurat_sce
             } else {
                 print(paste0("Loading sce dataset ", i))
-                sl <- create_SCEs(samplelist[i], data10Xs[i], bcs[i], anno)
+                sl <- create_SCEs(samplelist[i], data10Xs[i], anno)
                 scetomerge[[i - 1]] <- sl$sce
                 seurattomerge[[i - 1]] <- sl$seurat_sce
             }
