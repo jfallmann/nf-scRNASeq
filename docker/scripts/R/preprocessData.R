@@ -248,21 +248,21 @@ colData(sce)["Cluster"] <- factor(cluster)
 
 
 ### SCtransform counts
-print("SCtransform Seurat ...")
-seurat_sce <- sctransform_Seurat(seurat_sce)
+#print("SCtransform Seurat ...")
+#seurat_sce <- sctransform_Seurat(seurat_sce)
 ### Run initial dim reduction for norm
 print("PCA Seurat ...")
 seurat_sce <- reduceDims_Seurat(seurat_sce)
 ### Run initial dim reduction for SCT
-seurat_sce <- reduceDims_Seurat(seurat_sce, assay = "SCT", reduction.name = "pca_sct")
+#seurat_sce <- reduceDims_Seurat(seurat_sce, assay = "SCT", reduction.name = "pca_sct")
 ### Cluster
 print("Clustering Seurat ...")
 seurat_sce <- cluster_Seurat(seurat_sce, assay = "RNA", reduction = "pca", cluster.name = "pca_cluster")
-seurat_sce <- cluster_Seurat(seurat_sce, assay = "SCT", reduction = "pca_sct", cluster.name = "sct_cluster")
+#seurat_sce <- cluster_Seurat(seurat_sce, assay = "SCT", reduction = "pca_sct", cluster.name = "sct_cluster")
 ## Run UMAPs
 print("UMAP Seurat ...")
 seurat_sce <- umap_Seurat(seurat_sce, assay = "RNA", reduction = "pca", dims = 1:30, reduction.name = "umap_pca", n.neighbors = 30L, min.dist = 0.1, spread = 5)
-seurat_sce <- umap_Seurat(seurat_sce, assay = "SCT", reduction = "pca_sct", dims = 1:30, reduction.name = "umap_pca_sct", n.neighbors = 30L, min.dist = 0.1, spread = 5)
+#seurat_sce <- umap_Seurat(seurat_sce, assay = "SCT", reduction = "pca_sct", dims = 1:30, reduction.name = "umap_pca_sct", n.neighbors = 30L, min.dist = 0.1, spread = 5)
 
 #### Save final objects ####
 print("Final Save ...")
