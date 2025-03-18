@@ -165,9 +165,7 @@ log.info """
  |   filter                  : ${filtering}
  |   max_mt_percent          : ${maxMtPercent}
  |   min_detected_features   : ${minDetectedFeatures}
- |   min_detected_barcodes   : ${minBC}
  |   markerfile              : ${markerfile}
- |   chunk size              : ${chunkSize}
  |   organism                : ${organism}
  |   baseline                : ${refName}
  |
