@@ -920,16 +920,21 @@ workflow{
         }
 
         /**********************************************************
+                STEP 0.1: Concat Lanes
+        ***********************************************************/
+
+        concat_lanes(Ch_map_input)
+
+        /**********************************************************
                 STEP 1: Count Reads
         ***********************************************************/
 
-        
         if (mapperbin == 'CellRanger'){
-            runCellrangerCount(concat_lanes(Ch_map_input).out.fastq.groupTuple(by: 0).combine( Ch_mapping_idx ))
+            runCellrangerCount(concat_lanes.out.fastq.groupTuple(by: 0).combine( Ch_mapping_idx ))
             useCellrangerData(Ch_map_precomputed)
 
         }else if (mapperbin == 'STAR'){
-            star_mapping(concat_lanes(Ch_map_input).out.fastq.groupTuple(by: 0).combine( Ch_mapping_idx ).combine( Ch_whitelist ))                    
+            star_mapping(concat_lanes.out.fastq.groupTuple(by: 0).combine( Ch_mapping_idx ).combine( Ch_whitelist ))                    
         }
         //Ch_count_input.subscribe {  println "InputCount: $it"  }
         
