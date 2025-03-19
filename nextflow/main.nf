@@ -323,6 +323,7 @@ process Cellranger_idx{
         && cellranger mkref ${idxparams}\
         --genome=${IDX} \
         --nthreads ${task.cpus} \
+        --memgb ${task.memory.toGiga()} \
         --fasta tmp.fa \
         --genes tmp_anno \
         && rm -f tmp.fa tmp_anno \        
