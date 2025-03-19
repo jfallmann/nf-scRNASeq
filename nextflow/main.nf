@@ -930,11 +930,11 @@ workflow{
         ***********************************************************/
 
         if (mapperbin == 'CellRanger'){
-            runCellrangerCount(concat_lanes.groupTuple(by: 0).combine( Ch_mapping_idx ))
+            runCellrangerCount(concat_lanes.out.groupTuple(by: 0).combine( Ch_mapping_idx ))
             useCellrangerData(Ch_map_precomputed)
 
         }else if (mapperbin == 'STAR'){
-            star_mapping(concat_lanes.groupTuple(by: 0).combine( Ch_mapping_idx ).combine( Ch_whitelist ))                    
+            star_mapping(concat_lanes.out.groupTuple(by: 0).combine( Ch_mapping_idx ).combine( Ch_whitelist ))                    
         }
         //Ch_count_input.subscribe {  println "InputCount: $it"  }
         
