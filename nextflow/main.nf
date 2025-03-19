@@ -228,7 +228,7 @@ process concat_reads {
 
     script:
     """
-    cat -f ${reads} > "${sampleName}.fastq.gz"
+    cat ${reads} > "${sampleName}.fastq.gz"
     """
 }
 
