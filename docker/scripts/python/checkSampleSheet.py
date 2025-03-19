@@ -33,6 +33,7 @@ class RowChecker:
         sample_col="SampleName",
         cond_col="Condition",
         rep_col="Replicate",
+        lane_col="Lane",
         R1_col="R1",
         R2_col="R2",
         cellnr_col="CellNumber",
@@ -46,7 +47,8 @@ class RowChecker:
             sample_col (str): The name of the column that contains the sample name
                 (default "SampleName").
             cond_col (str): The name of the column that contains the experiments condition (e.g. treatment or timepoint, default "Condition0").
-            rep_col (str): The name of the column that contains the replicate number (default "Replicate").            
+            rep_col (str): The name of the column that contains the replicate number (default "Replicate").
+            lane_col (str): The name of the sequencing lane that was used (default "Lane").
             R1_col (str): The name of the column that contains the first FASTQ file path (default "R1").
             R2_col (str): The name of the column that contains the second FASTQ file path (default "R2").
             cellnr_col (str): The name of the column that contains the estimated cell number (e.g. 1000, NA, 1000!, default "CellNumber").
@@ -57,6 +59,7 @@ class RowChecker:
         self._sample_col = sample_col
         self._cond_col = cond_col
         self._rep_col = rep_col
+        self._lane_col = lane_col
         self._R1_col = R1_col
         self._R2_col = R2_col
         self._cellnr_col = cellnr_col
@@ -76,6 +79,7 @@ class RowChecker:
         self._validate_sample(row)
         self._validate_condition(row)
         self._validate_replicate(row)
+        self._validate_lane(row)
         self._validate_R1(row)
         self._validate_R2(row)
         self._validate_cellnr(row)
@@ -85,6 +89,7 @@ class RowChecker:
                 row[self._sample_col],
                 row[self._cond_col],
                 row[self._rep_col],
+                row[self._lane_col],
                 row[self._R1_col],
             )
         )
@@ -114,6 +119,17 @@ class RowChecker:
                 raise AssertionError("Replicate number must be a positive integer.")
         except ValueError:
             raise AssertionError("Replicate number must be a positive integer.")
+
+    def _validate_lane(self, row):
+        """Assert that the lane exists and is a positive integer."""
+        if len(row[self._lane_col]) <= 0:
+            raise AssertionError("Lane input is required.")
+        try:
+            lane = int(row[self._lane_col])
+            if lane <= 0:
+                raise AssertionError("Lane number must be a positive integer.")
+        except ValueError:
+            raise AssertionError("Lane number must be a positive integer.")
 
     def _validate_R1(self, row):
         """Assert that the R1 FASTQ file path exists and has the right format."""
@@ -222,17 +238,18 @@ def check_samplesheet(file_in):
     Example:
         This function checks that the samplesheet follows the following structure
 
-            SampleName,Condition,Replicate,R1,R2,CellNumber,Chemistry
-            ScaleBio,Scale,1,S1_R1_001.fastq.gz,S1_R2_001.fastq.gz,NA,ScaleBio
-            ScaleBio,Scale,1,S6_L001_R1_001.fastq.gz,S6_L001_R2_001.fastq.gz,NA,ScaleBio
-            Day0,Day0,1,S2_L001_R1_001.fastq.gz,S2_L001_R2_001.fastq.gz,7500!,10X
-            Day0,Day0,1,S3_L001_R1_001.fastq.gz,S3_L001_R2_001.fastq.gz,NA,10X
+            SampleName,Condition,Replicate,Lane,R1,R2,CellNumber,Chemistry
+            ScaleBio,Scale,1,1,S1_R1_001.fastq.gz,S1_R2_001.fastq.gz,NA,ScaleBio
+            ScaleBio,Scale,1,1,S6_L001_R1_001.fastq.gz,S6_L001_R2_001.fastq.gz,NA,ScaleBio
+            Day0,Day0,1,1,S2_L001_R1_001.fastq.gz,S2_L001_R2_001.fastq.gz,7500!,10X
+            Day0,Day0,1,1,S3_L001_R1_001.fastq.gz,S3_L001_R2_001.fastq.gz,NA,10X
 
     """
     required_columns = {
         "SampleName",
         "Condition",
         "Replicate",
+        "Lane",
         "R1",
         "R2",
         "CellNumber",
