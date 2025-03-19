@@ -923,14 +923,14 @@ workflow{
                 STEP 0.1: Concat Lanes
         ***********************************************************/
 
-        concat_lanes(Ch_map_input)
+        
 
         /**********************************************************
                 STEP 1: Count Reads
         ***********************************************************/
 
         if (mapperbin == 'CellRanger'){
-            runCellrangerCount(concat_lanes.out.groupTuple(by: 0).combine( Ch_mapping_idx ))
+            runCellrangerCount(concat_lanes(Ch_map_input).groupTuple(by: 0).combine( Ch_mapping_idx ))
             useCellrangerData(Ch_map_precomputed)
 
         }else if (mapperbin == 'STAR'){
