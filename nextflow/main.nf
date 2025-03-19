@@ -399,6 +399,8 @@ process runCellrangerCount{
             crparams = crparams + ' --expect-cells ' + cells_expected 
         }
     }
+    taskmem = task.memory.toGiga()
+
     """
     # Find all reads, sort them by name to ensure that the paired files are on the consecutive lines,
     # and then create symlinks with proper names (SampleName_S1_R1_xxx.fastq.gz)
@@ -427,7 +429,7 @@ process runCellrangerCount{
         ${crparams} \
         --jobmode local \
         --localcores ${task.cpus} \
-        --localmem ${task.memory} \
+        --localmem ${taskmem} \
         --transcriptome ${index} \
         --id ${sampleName} \
         --fastqs inputs
