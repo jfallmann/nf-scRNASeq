@@ -930,7 +930,7 @@ workflow{
         ***********************************************************/
 
         if (mapperbin == 'CellRanger'){
-            runCellrangerCount(concat_lanes(Ch_map_input).out.combine(Ch_mapping_idx).groupTuple(by: 0))
+            runCellrangerCount(concat_lanes(Ch_map_input).combine(Ch_mapping_idx).groupTuple(by: 0))
             useCellrangerData(Ch_map_precomputed)
 
         }else if (mapperbin == 'STAR'){
