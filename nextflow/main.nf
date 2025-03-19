@@ -224,7 +224,7 @@ process concat_lanes {
     tuple val(sampleName), path("inputs/R1_*"), path("inputs/R2_*"), val(cells_expected), val(chemistry)
 
     output:
-    tuple val(sampleName), path("${sampleName}_R1.fastq.gz"), path("${sampleName}_R2.fastq.gz"), val(cells_expected), val(chemistry), emit: fastq
+    tuple val(sampleName), path("${sampleName}_R1.fastq.gz"), path("${sampleName}_R2.fastq.gz"), val(cells_expected), val(chemistry)
 
     script:
     """
@@ -930,11 +930,11 @@ workflow{
         ***********************************************************/
 
         if (mapperbin == 'CellRanger'){
-            runCellrangerCount(concat_lanes.out.fastq.combine( Ch_mapping_idx ))
+            runCellrangerCount(concat_lanes.groupTuple(by: 0).combine( Ch_mapping_idx ))
             useCellrangerData(Ch_map_precomputed)
 
         }else if (mapperbin == 'STAR'){
-            star_mapping(concat_lanes.out.fastq.groupTuple(by: 0).combine( Ch_mapping_idx ).combine( Ch_whitelist ))                    
+            star_mapping(concat_lanes.groupTuple(by: 0).combine( Ch_mapping_idx ).combine( Ch_whitelist ))                    
         }
         //Ch_count_input.subscribe {  println "InputCount: $it"  }
         
