@@ -216,7 +216,7 @@ process check_samplesheet {
                 CONCATENATE LANES
 ************************************************************************/
 
-process concat_reads {
+process concat_lanes {
 
     tag "${sampleName}"
 
@@ -923,24 +923,16 @@ workflow{
         }
 
         /**********************************************************
-                STEP 0.1: Concatenate Lanes
-        ***********************************************************/
-        
-        Ch_map_input = concat_reads(Ch_map_input).fastq.collect()
-        //Ch_map_input.subscribe {  println "Concatenated: $it"  }
-
-
-        /**********************************************************
                 STEP 1: Count Reads
         ***********************************************************/
 
         
         if (mapperbin == 'CellRanger'){
-            runCellrangerCount(Ch_map_input)
+            runCellrangerCount(concat_lanes(Ch_map_input).fastq)
             useCellrangerData(Ch_map_precomputed)
 
         }else if (mapperbin == 'STAR'){
-            star_mapping(Ch_map_input)                    
+            star_mapping(concat_lanes(Ch_map_input).fastq)                    
         }
         //Ch_count_input.subscribe {  println "InputCount: $it"  }
         
