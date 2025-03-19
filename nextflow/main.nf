@@ -859,7 +859,7 @@ workflow{
                 raw: (new File(it.R1)).isFile()
                 precomputed: (new File(it.R1)).isDirectory()
             }
-        //Ch_csv_GEX_split.raw.subscribe {  println "GEX: $it"  }
+        Ch_csv_GEX_split.raw.subscribe {  println "GEX: $it"  }
         
         //Create a list of unique conditions
         Ch_Conditions = Ch_csv.map { row -> row.Condition }.distinct().branch{                 
