@@ -853,13 +853,13 @@ workflow{
         ***********************************************************/
         
         Ch_csv = check_samplesheet.out.csv.splitCsv(sep: ",", header: true)
-        Ch_csv.subscribe {  println "CSV: $it"  }
+        //Ch_csv.subscribe {  println "CSV: $it"  }
 
         Ch_csv_GEX_split = Ch_csv.branch{
                 raw: (new File(it.R1)).isFile()
                 precomputed: (new File(it.R1)).isDirectory()
             }
-        Ch_csv_GEX_split.raw.subscribe {  println "GEX: $it"  }
+        //Ch_csv_GEX_split.raw.subscribe {  println "GEX: $it"  }
         
         //Create a list of unique conditions
         Ch_Conditions = Ch_csv.map { row -> row.Condition }.distinct().branch{                 
@@ -910,7 +910,7 @@ workflow{
         if (mapperbin == 'CellRanger'){
             Ch_map_precomputed = Ch_csv_GEX_split.precomputed.map { row -> tuple(row.SampleName.replaceAll("_","-")+'_'+row.Condition.replaceAll("_","-")+'_'+row.Replicate.replaceAll("_","-"), file(row.R1)) }.groupTuple(by: 0)            
         }
-        Ch_map_input.subscribe {  println "INPUT: $it"  }
+        //Ch_map_input.subscribe {  println "INPUT: $it"  }
 
         if(runqc){
             Ch_QC_input = Ch_csv.filter { new File(it.R1).isFile() }.map { row -> tuple(row.SampleName.replaceAll("_","-")+'_'+row.Condition.replaceAll("_","-")+'_'+row.Replicate.replaceAll("_","-"), file(row.R1), file(row.R2)) }.groupTuple(by: 0)
@@ -923,14 +923,14 @@ workflow{
                 STEP 0.1: Concat Lanes
         ***********************************************************/
 
-        
+        concat_lanes(Ch_map_input)
 
         /**********************************************************
                 STEP 1: Count Reads
         ***********************************************************/
 
         if (mapperbin == 'CellRanger'){
-            runCellrangerCount(concat_lanes(Ch_map_input).combine(Ch_mapping_idx).groupTuple(by: 0))
+            runCellrangerCount(concat_lanes.out.groupTuple(by: 0).combine(Ch_mapping_idx))
             useCellrangerData(Ch_map_precomputed)
 
         }else if (mapperbin == 'STAR'){
