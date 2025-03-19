@@ -853,7 +853,7 @@ workflow{
         ***********************************************************/
         
         Ch_csv = check_samplesheet.out.csv.splitCsv(sep: ",", header: true)
-        //Ch_csv.subscribe {  println "CSV: $it"  }
+        Ch_csv.subscribe {  println "CSV: $it"  }
 
         Ch_csv_GEX_split = Ch_csv.branch{
                 raw: (new File(it.R1)).isFile()
