@@ -221,7 +221,7 @@ process concat_lanes {
     tag "${sampleName}"
 
     input:
-    tuple val(sampleName), path("inputs/R1_*"), path("inputs/R2_*"), val(cells_expected), val(chemistry)
+    tuple val(sampleName), path("inputs/R1_?"), path("inputs/R2_?"), val(cells_expected), val(chemistry)
 
     output:
     tuple val(sampleName), path("${sampleName}_R1.fastq.gz"), path("${sampleName}_R2.fastq.gz"), val(cells_expected), val(chemistry)
@@ -923,7 +923,7 @@ workflow{
                 STEP 0.1: Concat Lanes
         ***********************************************************/
 
-        concat_lanes(Ch_map_input)
+        concat_lanes(Ch_map_input.collect())
 
         /**********************************************************
                 STEP 1: Count Reads
