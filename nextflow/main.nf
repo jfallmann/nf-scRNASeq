@@ -387,8 +387,8 @@ process runCellrangerCount{
     
     script:
     // Check chemistry specific settings
-    chemistry = chemistry[0]
-    cells_expected = cells_expected[0]
+    chemistry = chemistry.unique()[0]
+    cells_expected = cells_expected.unique()[0]
     if (!chemistry.contains("10X")){
         log.error("Running CellRanger on chemistry different than 10X is not supported, please check your settings and sample sheet.")
 
@@ -571,8 +571,8 @@ process star_mapping{
     idxdir = idx.toRealPath()
     extraparams = ''
     
-    chemistry = chemistry[0]
-    cells_expected = cells_expected[0]
+    chemistry = chemistry.unique()[0]
+    cells_expected = cells_expected.unique()[0]
     
     // Check whitelist
     if( (whitelist.size() > 0 ) && (chemistry != 'ScaleBio')){
@@ -932,14 +932,6 @@ workflow{
         if (mapperbin == 'CellRanger'){
             runCellrangerCount(concat_lanes.out.groupTuple(by: 0).combine(Ch_mapping_idx))
             useCellrangerData(Ch_map_precomputed)
-
-        }else if (mapperbin == 'STAR'){
-            star_mapping(concat_lanes.out.groupTuple(by: 0).combine( Ch_mapping_idx ).combine( Ch_whitelist ))                    
-        }
-        //Ch_count_input.subscribe {  println "InputCount: $it"  }
-        
-        
-        if (mapperbin == 'CellRanger'){
             if (filtering){
                 Ch_cell_ids = runCellrangerCount.out.cell_ids_filtered.mix(useCellrangerData.out.cell_ids_from_precomputed_filtered)
 
@@ -949,7 +941,8 @@ workflow{
 
                 Ch_cell_data = runCellrangerCount.out.cell_data_raw.mix(useCellrangerData.out.cell_data_from_precomputed_raw)
             }
-        } else if (mapperbin == 'STAR'){            
+        }else if (mapperbin == 'STAR'){
+            star_mapping(concat_lanes.out.groupTuple(by: 0).combine( Ch_mapping_idx ).combine( Ch_whitelist ))                    
             if (filtering){
                 Ch_cell_ids = star_mapping.out.cell_ids_filtered
 
@@ -960,6 +953,7 @@ workflow{
                 Ch_cell_data = star_mapping.out.cell_data_raw
             }
         }
+        //Ch_count_input.subscribe {  println "InputCount: $it"  }
     
         /**************************************************************
                 STEP 2: Generate SingleCellExperiment object
