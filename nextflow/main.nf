@@ -923,7 +923,7 @@ workflow{
                 STEP 0.1: Concat Lanes
         ***********************************************************/
 
-        concat_lanes(Ch_map_input.collect())
+        concat_lanes(Ch_map_input)
 
         /**********************************************************
                 STEP 1: Count Reads
