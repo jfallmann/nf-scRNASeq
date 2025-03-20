@@ -387,8 +387,8 @@ process runCellrangerCount{
     
     script:
     // Check chemistry specific settings
-    chemistry = chemistry.unique()[0]
-    cells_expected = cells_expected.unique()[0]
+    chemistry = chemistry[0].unique()[0]
+    cells_expected = cells_expected[0].unique()[0]
     if (!chemistry.contains("10X")){
         log.error("Running CellRanger on chemistry different than 10X is not supported, please check your settings and sample sheet.")
 
@@ -571,8 +571,8 @@ process star_mapping{
     idxdir = idx.toRealPath()
     extraparams = ''
     
-    chemistry = chemistry.unique()[0]
-    cells_expected = cells_expected.unique()[0]
+    chemistry = chemistry[0].unique()[0]
+    cells_expected = cells_expected[0].unique()[0]
     
     // Check whitelist
     if( (whitelist.size() > 0 ) && (chemistry != 'ScaleBio')){
