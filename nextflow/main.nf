@@ -690,10 +690,10 @@ process preprocessSingleCellData{
         path(gtf)
 
     output:
-        path("SingleCell*_filtered_seurat_sce.rds.gz"), emit: basic_seurat_sce
-        path("SingleCell*_filtered_sce.rds.gz"), emit: basic_sce
-        path("SingleCell*_unfiltered_seurat_sce.rds.gz"), emit: basic_raw_seurat_sce
-        path("SingleCell*_unfiltered_sce.rds.gz"), emit: basic_raw_sce
+        path("nf-scRNASeq*_filtered_seurat_sce.rds.gz"), emit: basic_seurat_sce
+        path("nf-scRNASeq*_filtered_sce.rds.gz"), emit: basic_sce
+        path("nf-scRNASeq*_unfiltered_seurat_sce.rds.gz"), emit: basic_raw_seurat_sce
+        path("nf-scRNASeq*_unfiltered_sce.rds.gz"), emit: basic_raw_sce
         path("*.pdf"), emit: basic_sce_qc, optional: true
 
     script:
