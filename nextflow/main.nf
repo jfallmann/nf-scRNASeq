@@ -944,7 +944,7 @@ workflow{
                 Ch_cell_data = runCellrangerCount.out.cell_data_raw.mix(useCellrangerData.out.cell_data_from_precomputed_raw)
             }
         }else if (mapperbin == 'STAR'){
-            star_mapping(concat_lanes.out.groupTuple(by: 0).combine( Ch_mapping_idx ).combine( Ch_whitelist ))                    
+            star_mapping(concat_lanes.out.combine( Ch_mapping_idx ).combine( Ch_whitelist ))                    
             if (filtering){
                 Ch_cell_ids = star_mapping.out.cell_ids_filtered
 
