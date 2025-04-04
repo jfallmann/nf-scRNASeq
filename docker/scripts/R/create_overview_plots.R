@@ -116,39 +116,6 @@ p.umap_samples <- DimPlot(sce, reduction = reduction.name, group.by = "Sample", 
 # LabelClusters(plot = plot, id = "ident")
 # LabelPoints(plot = plot, points = TopCells(object = pbmc3k.final[["pca"]]), repel = TRUE)
 
-status.colors <- list(
-    "Singlet" = "forestgreen",
-    "Double_Integration" = "orange",
-    "Multiplet" = "red",
-    "No_barcode" = "grey50"
-)
-p.status_distr <- DimPlot(sce, reduction = reduction.name, group.by = "CaTCH.Status", label.size = 1, alpha = .2) + # , ylab = "Proportion, [%]") +
-    ggtitle("CaTCH status per sample") +
-    guides(colour = guide_legend(override.aes = list(size = 4))) +
-    scale_color_manual(values = status.colors, name = "Catch.Status")
-
-p.status_distr_samples <- createValueDistrPlot(sce,
-    grp.col = "Sample",
-    val.col = "CaTCH.Status",
-    colors = status.colors,
-    ylab = "Proportion, [%]",
-    title = "CaTCH status per sample"
-) +
-    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
-    guides(fill = guide_legend("CaTCH status"))
-
-
-p.status_distr_cluster <- createValueDistrPlot(sce,
-    grp.col = "pca_cluster",
-    val.col = "CaTCH.Status",
-    colors = status.colors,
-    ylab = "Proportion, [%]",
-    title = "CaTCH status per sample"
-) +
-    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
-    guides(fill = guide_legend("CaTCH status"))
-
-
 p.cluster_size <- sce@meta.data %>%
     dplyr::select(pca_cluster, Condition) %>%
     group_by(pca_cluster, Condition) %>%
@@ -207,20 +174,6 @@ p.cellstage_samples_distr <- createValueDistrPlot(sce,
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
     guides(fill = guide_legend("Cell cycle stage"))
 
-
-p.unique_bc_distr <- sce@meta.data %>%
-    filter(CaTCH.Status == "Singlet" | CaTCH.Status == "Double_Integration") %>%
-    dplyr::select(Sample, CaTCH.BCs) %>%
-    group_by(Sample) %>%
-    summarise(Unique = n_distinct(CaTCH.BCs)) %>%
-    ggplot() +
-    geom_col(aes(x = Sample, y = Unique)) +
-    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
-    xlab("Sample") +
-    ylab("Unique CaTCH barcodes") +
-    ggtitle("Unique CaTCH barcodes per sample")
-
-
 out <- paste0(opt$out, ".", opt$format)
 if (opt$format == "png") {
     png(filename = out, width = opt$width, height = opt$height * 2)
@@ -233,30 +186,24 @@ if (opt$format == "png") {
 }
 print(grid.arrange(
     p.umap_clusters, # 1
-    p.umap_samples, # 2
-    p.status_distr, # 3
-    p.cluster_size, # 4
-    p.umap_cellstage, # 5
-    p.umap_cellstatus, # 6
-    p.cellstage_distr, # 7
-    p.cellstage_samples_distr, # 8
-    p.status_distr_cluster, # 9
-    p.status_distr_samples, # 10
-    p.unique_bc_distr, # 11
+    p.umap_samples, # 2    
+    p.umap_cellstage, # 3
+    p.umap_cellstatus, # 4
+    p.cluster_size, # 5
+    p.cellstage_distr, # 6
+    p.cellstage_samples_distr, # 7
     layout_matrix = rbind(
         c(1, 1, 1, 1, 1, 2, 2, 2, 2, 2),
         c(1, 1, 1, 1, 1, 2, 2, 2, 2, 2),
         c(1, 1, 1, 1, 1, 2, 2, 2, 2, 2),
         c(1, 1, 1, 1, 1, 2, 2, 2, 2, 2),
-        c(3, 3, 3, 11, 11, 11, 4, 4, 4, 4),
-        c(3, 3, 3, 11, 11, 11, 4, 4, 4, 4),
-        c(3, 3, 3, 11, 11, 11, 4, 4, 4, 4),
-        c(5, 5, 5, 6, 6, 6, 9, 9, 9, 9),
-        c(5, 5, 5, 6, 6, 6, 9, 9, 9, 9),
-        c(5, 5, 5, 6, 6, 6, 9, 9, 9, 9),
-        c(7, 7, 7, 8, 8, 8, 10, 10, 10, 10),
-        c(7, 7, 7, 8, 8, 8, 10, 10, 10, 10),
-        c(7, 7, 7, 8, 8, 8, 10, 10, 10, 10)
+        c(3, 3, 3, 3, 3, 4, 4, 4, 4, 4),
+        c(3, 3, 3, 3, 3, 4, 4, 4, 4, 4),
+        c(3, 3, 3, 3, 3, 4, 4, 4, 4, 4),
+        c(3, 3, 3, 3, 3, 4, 4, 4, 4, 4),        
+        c(5, 5, 5, 6, 6, 6, 7, 7, 7, 7),
+        c(5, 5, 5, 6, 6, 6, 7, 7, 7, 7),
+        c(5, 5, 5, 6, 6, 6, 7, 7, 7, 7)        
         # c(12, 12, 12, 12, 12, 13, 13, 13, 13, 13),
         # c(12, 12, 12, 12, 12, 13, 13, 13, 13, 13),
         # c(12, 12, 12, 12, 12, 13, 13, 13, 13, 13),
