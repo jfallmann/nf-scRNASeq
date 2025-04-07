@@ -21,11 +21,11 @@ option_list <- list(
     ),
     make_option(c("--width"),
         type = "numeric", default = 20,
-        help = "width of the plot of a single CaTCH barcode. The units depend on the format: inches for PDF, pixels otherwise"
+        help = "width of the plot. The units depend on the format: inches for PDF, pixels otherwise"
     ),
     make_option(c("--height"),
         type = "numeric", default = 25,
-        help = "height of the plot of a single CaTCH barcode. The units depend on the format: inches for PDF, pixels otherwise"
+        help = "height of the plot. The units depend on the format: inches for PDF, pixels otherwise"
     ),
     make_option(c("--pcut"),
         type = "numeric", default = 0.1,

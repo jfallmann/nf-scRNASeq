@@ -22,7 +22,7 @@ RUN apt-get update \
 		&& apt-get autoremove -y \
 		&& apt-get autoclean -y 
 
-# Install the required Python packages and add the CaTCH package
+# Install the required Python packages and add libraries
 RUN     pip install pandas numpy biopython
 RUN     mkdir -p /tools/{data,scripts}
 COPY    data /tools/data

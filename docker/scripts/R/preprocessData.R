@@ -71,7 +71,7 @@ library(SeuratWrappers)
 library(sctransform)
 library(R.filesets)
 
-### Load all experiments, add CaTCH barcodes as layer and converting to Seuratv5 Object
+### Load all experiments as layer and converting to Seuratv5 Object
 sl <- create_SCEs(opt$sample, opt$data10X, opt$annotation)
 
 sce <- sl$sce

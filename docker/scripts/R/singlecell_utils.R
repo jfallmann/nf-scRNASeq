@@ -271,7 +271,7 @@ create_SCEs <- function(smpl, data10X, annotation) {
         }
 
         print("Merging Seurat")
-        seurat_sce <- merge(firstseurat, seurattomerge, add.cell.ids = samplelist, project = "scCaTCH", merge.data = TRUE, merge.dr = FALSE) # merge all the seurat datasets
+        seurat_sce <- merge(firstseurat, seurattomerge, add.cell.ids = samplelist, project = "scRNASeq", merge.data = TRUE, merge.dr = FALSE) # merge all the seurat datasets
 
         return(list(sce = sce, seurat_sce = seurat_sce))
     }
