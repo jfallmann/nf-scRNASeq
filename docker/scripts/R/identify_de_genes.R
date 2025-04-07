@@ -91,6 +91,10 @@ if (DefaultAssay(sce) != "RNA") {
 ### set reference condition ###
 ref.Condition <- opt$baseCond
 
+sce$Condition <- sce@meta.data %>%
+    mutate(Condition = as.factor(paste0(unique(c(Sample, Condition)), sep="_"))) %>%
+    pull(Condition)
+
 # ### Change Ident
 orig.ident <- Idents(sce)
 Idents(sce) <- sce[[]]$pca_cluster
