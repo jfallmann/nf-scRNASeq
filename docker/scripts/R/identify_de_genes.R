@@ -92,7 +92,7 @@ if (DefaultAssay(sce) != "RNA") {
 ref.Condition <- opt$baseCond
 
 sce$Condition <- sce@meta.data %>%
-    mutate(Condition = as.factor(paste0(unique(c(Sample, Condition)), sep="_"))) %>%
+    mutate(Condition = as.factor(paste0(Sample, Condition, sep="_"))) %>%
     pull(Condition)
 
 # ### Change Ident
