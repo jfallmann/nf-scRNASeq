@@ -1,11 +1,11 @@
 {
 	"folders": [
-		{
-			"path": "."
-		},
-		{
-            "path": "../nf-scRNASeq",
-		}
-	],
+        {
+            "path": "."
+        },
+        {
+            "path": "../sccatch"
+        }
+    ],
     "settings": {}
 }
