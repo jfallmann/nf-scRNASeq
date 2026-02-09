@@ -692,7 +692,7 @@ process preprocessSingleCellData{
     //conda "cellranger.yaml"
     cache 'lenient'
     //label 'big_mem'
-    tag "${sampleName}"
+    tag "Preprocess_SingleCellData_${sampleTag}"
 
     publishDir "${absDir}/", mode: 'link',
     saveAs: {filename ->
@@ -708,38 +708,25 @@ process preprocessSingleCellData{
     }
 
     input:
-        path(featureMatrix)
-        path(gtf)
+        tuple val(sampleName), val(sampleTag), path(featureMatrix), path(gtf)
 
     output:
-        path("nf-scRNASeq*_filtered_seurat_sce.rds.gz"), emit: basic_seurat_sce
-        path("nf-scRNASeq*_filtered_sce.rds.gz"), emit: basic_sce
-        path("nf-scRNASeq*_unfiltered_seurat_sce.rds.gz"), emit: basic_raw_seurat_sce
-        path("nf-scRNASeq*_unfiltered_sce.rds.gz"), emit: basic_raw_sce
-        path("*.pdf"), emit: basic_sce_qc, optional: true
+        tuple val(sampleTag), path("*_filtered_seurat_sce.rds.gz"), emit: basic_seurat_sce
+        tuple val(sampleTag), path("*_filtered_sce.rds.gz"), emit: basic_sce
+        tuple val(sampleTag), path("*_unfiltered_seurat_sce.rds.gz"), emit: basic_raw_seurat_sce
+        tuple val(sampleTag), path("*_unfiltered_sce.rds.gz"), emit: basic_raw_sce
+        tuple val(sampleTag), path("*.pdf"), emit: basic_sce_qc, optional: true
 
     script:
     if (filtering){
-        featurematrix = "filtered_feature_bc_matrix"
         outname = 'nf-scRNASeq.prefiltered'
     }else{
-        featurematrix = "raw_feature_bc_matrix"
         outname = 'nf-scRNASeq'
     }
-    """ 
-    SAMPLES=''    
-    FEATURES=''
-    IDX=1
-    for mx in \$(find . -name "*_${featurematrix}"|cut -d'/' -f2);
-    do
-        SN=\${mx%*_${featurematrix}}
-        SAMPLES+="\${SN},"
-        FEATURES+="\${SN}_${featurematrix},"
-        IDX=\$((IDX + 1))
-    done
-    
-    SAMPLES=\${SAMPLES:0:-1}
-    FEATURES=\${FEATURES:0:-1}
+    outprefix = "${sampleTag}_${outname}"
+    """
+    SAMPLES='${sampleName}'
+    FEATURES='${featureMatrix}'
 
     Rscript --vanilla ${scriptDirR}preprocessData.R \
        --sample \$SAMPLES \
@@ -749,7 +736,7 @@ process preprocessSingleCellData{
        --max_mt ${maxMtPercent} \
        --min_features ${minDetectedFeatures} \
        --hvg_cutoff ${hvgCutoff} \
-       --out ${outname} \
+       --out ${outprefix} \
        --marker ${markerfile} \
        --libpath ${scriptDirR}
     """
@@ -764,7 +751,7 @@ process createOverviewPlots{
     //conda "cellranger.yaml"
     cache 'lenient'
     //label 'big_mem'
-    tag "${sampleName}"
+    tag "${sampleTag}"
 
     publishDir "${absDir}/", mode: 'link',
     saveAs: {filename ->
@@ -773,17 +760,16 @@ process createOverviewPlots{
     }
 
     input:
-        //tuple path(sce), path(script)
-        path(sce)
+        tuple val(sampleTag), path(sce)
 
     output:
-        path("*overview.pdf"), emit: pdf
+        tuple val(sampleTag), path("*overview.pdf"), emit: pdf
 
     script:
     if (filtering){
-        outname = 'SingleCell.prefiltered'
+        outname = "${sampleTag}_SingleCell.prefiltered"
     }else{
-        outname = 'SingleCell'
+        outname = "${sampleTag}_SingleCell"
     }
     """
     Rscript --vanilla ${scriptDirR}create_overview_plots.R \
@@ -806,7 +792,7 @@ process identifyDEGenes{
     //conda "cellranger.yaml"
     cache 'lenient'
     //label 'big_mem'
-    tag "${sampleName}"
+    tag "${sampleTag}"
 
     publishDir "${absDir}/", mode: 'link',
     saveAs: {filename ->
@@ -815,19 +801,19 @@ process identifyDEGenes{
     }
 
     input:
-        path(sce)
+        tuple val(sampleTag), path(sce)
         val(check)
 
     output:
-        path "*.pdf", emit: pdf
-        path "*.tsv.gz", emit: tables
-        path "*.rds.gz", emit: rds
+        tuple val(sampleTag), path "*.pdf", emit: pdf
+        tuple val(sampleTag), path "*.tsv.gz", emit: tables
+        tuple val(sampleTag), path "*.rds.gz", emit: rds
 
     script:
      if (filtering){
-        outname = 'SingleCell.prefiltered'
+        outname = "${sampleTag}_SingleCell.prefiltered"
     }else{
-        outname = 'SingleCell'
+        outname = "${sampleTag}_SingleCell"
     }
     """
     Rscript --vanilla ${scriptDirR}identify_de_genes.R \
@@ -980,21 +966,30 @@ workflow{
         //Ch_count_input.subscribe {  println "InputCount: $it"  }
     
         /**************************************************************
-                STEP 2: Generate SingleCellExperiment object
+            STEP 2: Generate SingleCellExperiment object
         ***************************************************************/
 
-        preprocessSingleCellData(Ch_cell_data.map { sample, data -> data }.collect(), Channel.fromPath(mapanno))
+        Ch_gtf = Channel.fromPath(mapanno)
+
+        Ch_preprocess_input = Ch_cell_data.combine(Ch_gtf)
+                        .map { sampleName, featureMatrix, gtf ->
+                        def sampleTag = sampleName.tokenize('_')[0]
+                        tuple(sampleName, sampleTag, featureMatrix, gtf)
+                        }
+
+        preprocessSingleCellData(Ch_preprocess_input)
 
         /**************************************************************
-                STEP 3: Generate overview plots
+            STEP 3: Generate overview plots
         ***************************************************************/
         createOverviewPlots(preprocessSingleCellData.out.basic_seurat_sce)
         
         /**************************************************************
-                STEP 4: Run DE Analysis for Genes
+            STEP 4: Run DE Analysis for Genes
         ***************************************************************/
-                
-        identifyDEGenes(preprocessSingleCellData.out.basic_seurat_sce, Ch_Conditions.multi.collect())
+        Ch_multi_conditions = Ch_Conditions.multi.collect()
+        
+        identifyDEGenes(preprocessSingleCellData.out.basic_seurat_sce, Ch_multi_conditions)
         
     //emit:
     //createOverviewPlots.out.pdf
