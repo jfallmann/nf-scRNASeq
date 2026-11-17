@@ -325,10 +325,13 @@ sctransform_Seurat <- function(sce, vst.flavor = "v2", vars.to.regress = "percen
 }
 
 
-reduceDims_Seurat <- function(sce, assay = "RNA", reduction.name = "pca", ...) {
+reduceDims_Seurat <- function(sce, assay = "RNA", reduction.name = "pca", npcs = NULL, ...) {
     print("   Reducing dimensions ...")
 
-    sce <- RunPCA(sce, assay = assay, reduction.name = reduction.name, ...)
+    if (is.null(npcs)) {
+        npcs <- max(1L, min(50L, ncol(sce) - 1L, nrow(sce) - 1L))
+    }
+    sce <- RunPCA(sce, assay = assay, reduction.name = reduction.name, npcs = npcs, ...)
     return(sce)
 }
 
@@ -357,6 +360,12 @@ integrate_Seurat <- function(sce, assay = "RNA", method = CCAIntegration, orig.r
 umap_Seurat <- function(sce, assay = "RNA", reduction = "integrated.cca", dims = 1:30, reduction.name = "umap.cca", n.neighbors = 25L, min.dist = 0.1, spread = 5, ...) {
     print("   Preparing UMAP ...")
 
+    npcs <- ncol(Embeddings(sce[[reduction]]))
+    dims <- dims[dims <= npcs]
+    if (length(dims) == 0) {
+        dims <- 1:npcs
+    }
+    n.neighbors <- min(as.integer(n.neighbors), max(2L, ncol(sce) - 1L))
     sce <- RunUMAP(sce, assay = assay, reduction = reduction, dims = dims, reduction.name = reduction.name, n.neighbors = n.neighbors, min.dist = min.dist, spread = spread, ...)
     return(sce)
 }
@@ -377,6 +386,130 @@ join_Seurat <- function(sce, assay = "RNA", layers = "data", new = "joined_data"
 
     sce <- JoinLayers(sce, assay = assay, layers = layers, new = new)
     return(sce)
+}
+
+
+split_SCE_paths <- function(sces) {
+    paths <- trimws(unlist(strsplit(as.character(sces), ",")))
+    paths <- paths[nzchar(paths)]
+    if (length(paths) == 0) {
+        stop("No SCE files provided")
+    }
+    missing <- paths[!file.exists(paths)]
+    if (length(missing) > 0) {
+        stop(paste0("SCE file(s) not found: ", paste(missing, collapse = ", ")))
+    }
+    paths
+}
+
+
+aggregate_SCE_pseudobulk <- function(sces, assay = "RNA") {
+    paths <- split_SCE_paths(sces)
+    print(sprintf("   Aggregating pseudobulk counts of %d library file(s) ...", length(paths)))
+
+    mats <- vector("list", length(paths))
+    metas <- vector("list", length(paths))
+
+    for (i in seq_along(paths)) {
+        sce <- loadRDS(paths[i])
+        if (DefaultAssay(sce) != assay) {
+            DefaultAssay(sce) <- assay
+        }
+
+        counts.mat <- LayerData(JoinLayers(sce[[assay]]), layer = "counts")
+        groups <- paste(as.character(sce$Sample), as.character(sce$Condition), as.character(sce$Replicate), sep = "__")
+        group.levels <- unique(groups)
+
+        design <- Matrix::sparseMatrix(
+            i = seq_along(groups),
+            j = match(groups, group.levels),
+            x = 1,
+            dims = c(length(groups), length(group.levels))
+        )
+        ps <- as.matrix(counts.mat %*% design)
+        rownames(ps) <- rownames(counts.mat)
+
+        parts <- strsplit(group.levels, "__", fixed = TRUE)
+        colsample <- vapply(parts, function(x) x[1], character(1))
+        colcond <- vapply(parts, function(x) x[2], character(1))
+        colrep <- vapply(parts, function(x) paste(x[-(1:2)], collapse = "__"), character(1))
+        colnames(ps) <- paste(colsample, colcond, colrep, sep = "_")
+
+        mats[[i]] <- ps
+        metas[[i]] <- data.frame(
+            Sample = colnames(ps),
+            Library = basename(paths[i]),
+            Condition = colcond,
+            Replicate = colrep,
+            stringsAsFactors = FALSE
+        )
+
+        rm(sce, ps)
+        gc(verbose = FALSE)
+    }
+
+    genes <- sort(Reduce(union, lapply(mats, rownames)))
+    countData <- do.call(cbind, lapply(mats, function(m) {
+        full <- matrix(0,
+            nrow = length(genes), ncol = ncol(m),
+            dimnames = list(genes, colnames(m))
+        )
+        full[rownames(m), ] <- as.matrix(m)
+        full
+    }))
+    metadata <- do.call(rbind, metas)
+
+    if (anyDuplicated(colnames(countData))) {
+        uniq <- make.unique(colnames(countData), sep = ".")
+        colnames(countData) <- uniq
+        metadata$Sample <- uniq
+    }
+
+    print(sprintf(
+        "   Aggregated %d genes x %d pseudobulk sample(s) covering %d condition(s): %s",
+        nrow(countData), ncol(countData), length(unique(metadata$Condition)),
+        paste(sort(unique(metadata$Condition)), collapse = ", ")
+    ))
+
+    list(counts = countData, metadata = metadata)
+}
+
+
+run_deseq_contrast <- function(contrast, sampleData, countData, ...) {
+    contrast_name <- contrast
+    contrast_groups <- strsplit(contrast, "-vs-")[[1]]
+    print(paste("Comparing ", contrast_name, sep = ""))
+
+    A <- contrast_groups[1]
+    B <- contrast_groups[2]
+
+    keep <- as.character(sampleData$Condition) %in% c(A, B)
+    sampleData <- sampleData[keep, , drop = FALSE]
+    countData <- countData[, sampleData$Sample, drop = FALSE]
+    sampleData$Condition <- factor(as.character(sampleData$Condition), levels = c(B, A))
+
+    dds <- DESeqDataSetFromMatrix(
+        countData = round(countData),
+        colData = sampleData,
+        design = ~Condition
+    )
+    dds <- DESeq(dds, parallel = FALSE, betaPrior = FALSE, minReplicatesForReplace = Inf, ...)
+
+    res <- results(dds, contrast = c("Condition", A, B))
+    res_shrink <- lfcShrink(dds = dds, coef = paste("Condition", A, "vs", B, sep = "_"), res = res, type = "apeglm")
+
+    res_shrink$Gene <- rownames(res_shrink)
+    res_shrink <- res_shrink %>%
+        tibble::as_tibble() %>%
+        dplyr::mutate(
+            p.adj = as.numeric(as.character(padj)),
+            log2FoldChange_MLE = as.numeric(res$log2FoldChange),
+            pvalue_MLE = as.numeric(res$pvalue)
+        ) %>%
+        dplyr::select(-padj) %>%
+        dplyr::arrange(log2FoldChange)
+
+    list(dds = dds, res = as.data.frame(res_shrink))
 }
 
 

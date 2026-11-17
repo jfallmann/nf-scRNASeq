@@ -27,6 +27,8 @@ class RowChecker:
     """
 
     VALID_FORMATS = (".fastq.gz",)
+    VALID_LIBRARY_TYPES = ("GEX", "CellRanger")
+    PIPSEQ = "PIPseq"
 
     def __init__(
         self,
@@ -34,6 +36,7 @@ class RowChecker:
         cond_col="Condition",
         rep_col="Replicate",
         lane_col="Lane",
+        lib_col="LibraryType",
         R1_col="R1",
         R2_col="R2",
         cellnr_col="CellNumber",
@@ -60,6 +63,7 @@ class RowChecker:
         self._cond_col = cond_col
         self._rep_col = rep_col
         self._lane_col = lane_col
+        self._lib_col = lib_col
         self._R1_col = R1_col
         self._R2_col = R2_col
         self._cellnr_col = cellnr_col
@@ -80,16 +84,19 @@ class RowChecker:
         self._validate_condition(row)
         self._validate_replicate(row)
         self._validate_lane(row)
+        self._validate_library(row)
         self._validate_R1(row)
         self._validate_R2(row)
         self._validate_cellnr(row)
         self._validate_chemistry(row)
+        self._validate_pipseq_pair(row)
         self._seen.add(
             (
                 row[self._sample_col],
                 row[self._cond_col],
                 row[self._rep_col],
                 row[self._lane_col],
+                row[self._lib_col],
                 row[self._R1_col],
             )
         )
@@ -131,17 +138,48 @@ class RowChecker:
         except ValueError:
             raise AssertionError("Lane number must be a positive integer.")
 
+    def _validate_library(self, row):
+        """Assert that the library type exists and is a valid value."""
+        if len(row[self._lib_col]) <= 0:
+            raise AssertionError("Library type input is required.")
+        value = row[self._lib_col].strip()
+        for candidate in self.VALID_LIBRARY_TYPES:
+            if value.lower() == candidate.lower():
+                row[self._lib_col] = candidate
+                return
+        raise AssertionError(
+            f"Library type '{value}' is not supported by nf-scRNASeq, use one of: "
+            f"{', '.join(self.VALID_LIBRARY_TYPES)}."
+        )
+
     def _validate_R1(self, row):
         """Assert that the R1 FASTQ file path exists and has the right format."""
         if len(row[self._R1_col]) <= 0:
             raise AssertionError("R1 FASTQ file path is required.")
-        # Add your validation logic for R1 FASTQ file path here.
+        if row[self._lib_col] == "CellRanger":
+            if not Path(row[self._R1_col]).is_dir():
+                raise AssertionError(
+                    f"Precomputed CellRanger libraries need a directory in R1, "
+                    f"'{row[self._R1_col]}' is not a directory."
+                )
+            return
+        self._validate_fastq_file(row[self._R1_col])
 
     def _validate_R2(self, row):
         """Assert that the R2 FASTQ file path exists and has the right format if it exists."""
         if len(row[self._R2_col]) > 0:
-            # Add your validation logic for R2 FASTQ file path here.
-            pass
+            if row[self._lib_col] != "CellRanger":
+                self._validate_fastq_file(row[self._R2_col])
+
+    def _validate_fastq_file(self, filename):
+        """Assert that a FASTQ file exists, is gzip compressed and has a known extension."""
+        path = Path(filename)
+        if not path.is_file():
+            raise AssertionError(f"The FASTQ file {filename} does not exist.")
+        self._validate_fastq_format(filename)
+        with path.open("rb") as handle:
+            if handle.read(2) != b"\x1f\x8b":
+                raise AssertionError(f"The FASTQ file {filename} is not gzip compressed.")
 
     def _validate_cellnr(self, row):
         """Assert that the estimated cell number exists and is a positive integer or NA."""
@@ -153,7 +191,34 @@ class RowChecker:
         """Assert that the sequencing chemistry exists and is a valid value."""
         if len(row[self._chem_col]) <= 0:
             raise AssertionError("Sequencing chemistry input is required.")
-        # Add your validation logic for sequencing chemistry here.
+        value = row[self._chem_col].strip()
+        row[self._chem_col] = (
+            self.PIPSEQ if value.lower() == self.PIPSEQ.lower() else value
+        )
+
+    def _validate_pipseq_pair(self, row):
+        if row[self._chem_col].strip().lower() != self.PIPSEQ.lower():
+            return
+        if len(row[self._R2_col]) <= 0:
+            raise AssertionError("PIPseq libraries require a paired R2 FASTQ file.")
+        self._validate_fastq_format(row[self._R1_col])
+        self._validate_fastq_format(row[self._R2_col])
+
+    def validate_consistent_chemistry(self):
+        chemistries = {}
+        for row in self.modified:
+            key = (
+                row[self._sample_col],
+                row[self._cond_col],
+                row[self._rep_col],
+            )
+            chemistry = row[self._chem_col]
+            known = chemistries.setdefault(key, chemistry)
+            if known.lower() != chemistry.lower():
+                raise AssertionError(
+                    f"Sample '{key[0]}' condition '{key[1]}' replicate '{key[2]}' "
+                    f"mixes chemistries '{known}' and '{chemistry}'."
+                )
 
     def _validate_pair(self, row):
         """Assert that read pairs have the same file extension. Report pair status."""
@@ -222,7 +287,10 @@ def sniff_format(handle):
     # if not sniffer.has_header(peek):
     #     logger.critical("The given sample sheet does not appear to contain a header.")
     #     sys.exit(1)
-    dialect = sniffer.sniff(peek)
+    try:
+        dialect = sniffer.sniff(peek)
+    except csv.Error:
+        dialect = csv.excel
     return dialect
 
 
@@ -238,11 +306,10 @@ def check_samplesheet(file_in):
     Example:
         This function checks that the samplesheet follows the following structure
 
-            SampleName,Condition,Replicate,Lane,R1,R2,CellNumber,Chemistry
-            ScaleBio,Scale,1,1,S1_R1_001.fastq.gz,S1_R2_001.fastq.gz,NA,ScaleBio
-            ScaleBio,Scale,1,1,S6_L001_R1_001.fastq.gz,S6_L001_R2_001.fastq.gz,NA,ScaleBio
-            Day0,Day0,1,1,S2_L001_R1_001.fastq.gz,S2_L001_R2_001.fastq.gz,7500!,10X
-            Day0,Day0,1,1,S3_L001_R1_001.fastq.gz,S3_L001_R2_001.fastq.gz,NA,10X
+            SampleName,Condition,Replicate,Lane,LibraryType,R1,R2,CellNumber,Chemistry
+            ScaleBio,Scale,1,1,GEX,S1_R1_001.fastq.gz,S1_R2_001.fastq.gz,NA,ScaleBio
+            Day0,Day0,1,1,GEX,S2_L001_R1_001.fastq.gz,S2_L001_R2_001.fastq.gz,7500!,10X
+            Day0,Day0,1,2,CellRanger,/data/cellranger/Day0,NA,NA,10X
 
     """
     required_columns = {
@@ -250,6 +317,7 @@ def check_samplesheet(file_in):
         "Condition",
         "Replicate",
         "Lane",
+        "LibraryType",
         "R1",
         "R2",
         "CellNumber",
@@ -258,8 +326,9 @@ def check_samplesheet(file_in):
     # See https://docs.python.org/3.9/library/csv.html#id3 to read up on `newline=""`.
     with file_in.open(newline="") as in_handle:
         reader = csv.DictReader(in_handle, dialect=sniff_format(in_handle))
+        header = reader.fieldnames
         # Validate the existence of the expected header columns.
-        if not required_columns.issubset(reader.fieldnames):
+        if header is None or not required_columns.issubset(header):
             req_cols = ", ".join(required_columns)
             logger.critical(
                 f"The sample sheet **must** contain these column headers: {req_cols}."
@@ -273,8 +342,13 @@ def check_samplesheet(file_in):
             except AssertionError as error:
                 logger.critical(f"{str(error)} On line {i + 2}.")
                 sys.exit(1)
+        try:
+            checker.validate_consistent_chemistry()
+        except AssertionError as error:
+            logger.critical(f"{str(error)}")
+            sys.exit(1)
         checker.validate_unique_samples()
-    header = list(reader.fieldnames)
+    header = list(header)
     # See https://docs.python.org/3.9/library/csv.html#id3 to read up on `newline=""`.
     with open("sanity_check", mode="w", newline="") as out_handle:
         writer = csv.DictWriter(out_handle, header, delimiter=",")
@@ -314,4 +388,4 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    sys.exit(main())  #!/usr/bin/env python
+    sys.exit(main())

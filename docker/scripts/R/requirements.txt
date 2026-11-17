@@ -24,6 +24,7 @@ remotes::jokergoo/ComplexHeatmap
 
 # BioConductor packages installed through BiocManager
 BioConductor::SingleCellExperiment
+BioConductor::anndataR
 BioConductor::DESeq2
 BioConductor::edgeR
 BioConductor::apeglm
@@ -35,5 +36,5 @@ BioConductor::scran
 BioConductor::scater
 BioConductor::SingleR
 BioConductor::celldex
-BiocConductor::glmGamPoi
+BioConductor::glmGamPoi
 BioConductor::ComplexHeatmap

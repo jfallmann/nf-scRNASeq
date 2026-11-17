@@ -1,7 +1,7 @@
 #FROM    public.ecr.aws/lts/ubuntu:latest
 #FROM 	 rocker/tidyverse
 #ENV     DEBIAN_FRONTEND noninteractive
-FROM 	bioconductor/bioconductor_docker:RELEASE_3_18
+FROM 	bioconductor/bioconductor_docker:RELEASE_3_22
 
 ## Otherwise timedatectl will get called which leads to 'no systemd' inside Docker
 ENV TZ UTC
@@ -23,7 +23,7 @@ RUN apt-get update \
 		&& apt-get autoclean -y 
 
 # Install the required Python packages and add libraries
-RUN     pip install pandas numpy biopython
+RUN     pip install --break-system-packages pandas numpy biopython
 RUN     mkdir -p /tools/{data,scripts}
 COPY    data /tools/data
 COPY    scripts /tools/scripts
@@ -47,7 +47,7 @@ RUN set -ex
 
 RUN apt-get install -y --no-install-recommends ${PACKAGES} && \
     	apt-get clean && \
-		rm -rf /var/lib/apt/lists/* \
+		rm -rf /var/lib/apt/lists/* && \
     	g++ --version && \
     	cd /home && \
     	wget --no-check-certificate https://github.com/alexdobin/STAR/archive/${STAR_VERSION}.zip && \
@@ -86,7 +86,7 @@ RUN cd /home && \
 	rm -rf fastqc_v${FASTQC_VERSION}.zip
 
 # Install MultiQC
-RUN     pip install multiqc
+RUN     pip install --break-system-packages multiqc
 
 LABEL   maintainer="joerg.fallmann@imp.ac.at"
 LABEL   version="1.0.0"

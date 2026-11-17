@@ -85,7 +85,7 @@ if (opt$format == "png") {
     pdf(file = qcout, width = opt$width, height = opt$height)
 }
 
-FeatureScatter(sce, feature1 = "nCount_RNA", feature2 = "percent.mt", group.by = "Condition")
+FeatureScatter(sce, feature1 = "nCount_RNA", feature2 = "percent.mt", group.by = "Condition") %>% print()
 dev.off()
 
 qcout <- paste0(opt$out, "_QC_Feature_content_filtered.", opt$format)
@@ -99,7 +99,7 @@ if (opt$format == "png") {
     pdf(file = qcout, width = opt$width, height = opt$height)
 }
 
-FeatureScatter(sce, feature1 = "nCount_RNA", feature2 = "nFeature_RNA", group.by = "Condition")
+FeatureScatter(sce, feature1 = "nCount_RNA", feature2 = "nFeature_RNA", group.by = "Condition") %>% print()
 dev.off()
 
 ## Plot UMAPs
@@ -149,10 +149,11 @@ p.umap_cellstage <- DimPlot(sce, reduction = reduction.name, group.by = "CellSta
 
 sce@meta.data$CellStatus <- "Proliferating"
 sce@meta.data$CellStatus[sce@meta.data$S.Score < 0 & sce@meta.data$G2M.Score < 0] <- "Quiescent" # We have no clear G0, need to fix this somehow, Seurat suggests Cell-types which are very proliferative would have a higher fraction of cells in S/G2M whereas the cell types with low S/G2M fraction would be terminally differentiated, slowly dividing or quiescent cells
+sce@meta.data$CellStatus[is.na(sce@meta.data$S.Score) | is.na(sce@meta.data$G2M.Score)] <- "unassigned"
 p.umap_cellstatus <- DimPlot(sce, reduction = reduction.name, group.by = "CellStatus") +
     ggtitle("Overview by cell status") +
     guides(colour = guide_legend(override.aes = list(size = 4))) +
-    scale_color_manual(values = c("Proliferating" = "forestgreen", "Quiescent" = "gray75"), name = "Cell status")
+    scale_color_manual(values = c("Proliferating" = "forestgreen", "Quiescent" = "gray75", "unassigned" = "grey40"), name = "Cell status")
 
 p.cellstage_distr <- createValueDistrPlot(sce,
     grp.col = "pca_cluster",
@@ -214,4 +215,35 @@ print(grid.arrange(
     )
 ))
 
+p.umap_conditions <- DimPlot(sce, reduction = reduction.name, group.by = "Condition", label.size = 1, alpha = .3) +
+    ggtitle("Overview by condition") +
+    guides(colour = guide_legend(override.aes = list(size = 2)), shape = "none")
+
+p.umap_replicates <- DimPlot(sce, reduction = reduction.name, group.by = "Replicate", label.size = 1, alpha = .3) +
+    ggtitle("Overview by replicate") +
+    guides(colour = guide_legend(override.aes = list(size = 2)), shape = "none")
+
+p.qc_ribo <- FeatureScatter(sce, feature1 = "nCount_RNA", feature2 = "percent.ribo", group.by = "Condition") +
+    ggtitle("Ribosomal content")
+
+panels <- list(p.umap_conditions, p.umap_replicates, p.qc_ribo)
+
+if ("umap_pca_sct" %in% names(sce@reductions) && "sct_cluster" %in% colnames(sce@meta.data)) {
+    p.umap_sct_clusters <- DimPlot(sce, reduction = "umap_pca_sct", group.by = "sct_cluster", label.size = 1, alpha = .3) +
+        ggtitle("Overview by SCT cluster") +
+        guides(colour = guide_legend(override.aes = list(size = 2)), shape = "none")
+    panels <- c(panels, list(p.umap_sct_clusters))
+}
+
+print(grid.arrange(grobs = panels, ncol = 2))
+
 dev.off()
+
+qc.cols <- intersect(c("nCount_RNA", "nFeature_RNA", "percent.mt", "percent.ribo"), colnames(sce@meta.data))
+qc.summary <- sce@meta.data %>%
+    tibble::as_tibble() %>%
+    dplyr::group_by(Sample, Condition, Replicate) %>%
+    dplyr::summarise(n_cells = dplyr::n(), dplyr::across(dplyr::all_of(qc.cols), stats::median, .names = "median_{.col}"), .groups = "drop")
+
+write.table(qc.summary, file = paste0(opt$out, "_QC_summary.tsv"), sep = "\t", row.names = FALSE, quote = FALSE)
+write.table(sce@meta.data, file = paste0(opt$out, "_cell_metadata.tsv"), sep = "\t", row.names = TRUE, quote = FALSE, col.names = NA)
