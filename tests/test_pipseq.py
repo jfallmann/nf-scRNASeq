@@ -677,6 +677,7 @@ class PipseqStagingTest(PipseqTestCase):
         super().setUp()
         self.launch = self.workdir / "launch"
         self.launch.mkdir()
+        (self.launch / "lib").symlink_to(REPO / "nextflow" / "lib")
         self.work = self.workdir / "work"
         self.config_root = self.workdir / "config dir with spaces"
         (self.config_root / "configs").mkdir(parents=True)

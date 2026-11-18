@@ -91,16 +91,6 @@ def resolvePipspeakConfig(value){
     return [configFile, names, lists]
 }
 
-def pipseq_star_params(){
-    def cbLen = (params.pipseqCbLength != null) ? params.pipseqCbLength.toString().toInteger() : 24
-    def umiLen = (params.pipseqUmiLength != null) ? params.pipseqUmiLength.toString().toInteger() : 12
-    def preset = params.star_pipseq
-    if (preset instanceof Closure){
-        return preset.call(cbLen, umiLen)
-    }
-    return preset.toString()
-}
-
 def objectFlag(value, name) {
     def text = value?.toString()?.toLowerCase()
     if (!(text in ['true', 'false'])) {
@@ -633,23 +623,14 @@ process star_mapping{
         starparams = starparams + " --soloCBwhitelist None"
     }
     // Check chemistry specific settings
-    if (chemistry.contains("10X")){
-        extraparams = params.star_10X
-    }else if (chemistry == "Droplet"){
+    if (chemistry == "Droplet"){
         log.info("Running StarSolo on unspecified Droplet chemistry, please ensure your STARsolo parameters fit the protocol, please check and adapt default settings in mappers.config file in the conf directory of the nextflow subdirectory of this pipeline. There is no automatic sanity check!")
-        extraparams = params.star_droplet
     } else if (chemistry == 'ScaleBio'){
         starparams = params.starMappingParamsScale
-        extraparams = params.star_scalebio
     } else if (chemistry == "Smart"){
         log.info("Running StarSolo on chemistry different than Droplet based, please ensure your STARsolo parameters fit the protocol, please check and adapt default settings in mappers.config file in the conf directory of the nextflow subdirectory of this pipeline. There is no automatic sanity check!")
-        extraparams = params.star_smart
-    } else if (chemistry == 'PIPseq'){
-        extraparams = pipseq_star_params()
-    } else{
-        log.error("Unknown chemistry! Please choose between Droplet (10X or ScaleBio) and Smart.")
-        exit('Unknown chemistry! Please choose between Droplet (10X or ScaleBio) and Smart.')
     }
+    extraparams = Chemistry.starArgs(Chemistry.resolve(chemistry, params))
     // Check expected cell count
     if (cells_expected != "NA"){
         cellsexpCR = cells_expected.replaceAll('!', '') + ' 0.99 10'
