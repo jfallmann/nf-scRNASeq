@@ -124,6 +124,13 @@ lists relative to the YAML file; those lists are staged automatically, cached de
 files are left untouched. For VBCF `24CB12UMI` barcodes use the defaults
 `--pipseq_cb_length 24 --pipseq_umi_length 12 --pipseq_offset 8 --pipseq_umi_offset 10`.
 
+Mapping and counting follow the VBCF defaults. STARsolo runs with `--soloCBwhitelist None`
+(the pipspeak whitelist is not used for mapping), `--soloCellFilter EmptyDrops_CR 5000 0.99 10
+45000 90000 500 0.01 20000 0.01 10000` and `--clip3pNbases 45` (`--pipseq_clip3p`, set it to `0`
+to disable). A `CellNumber` in the samplesheet replaces the expected-cell value of 5000. The
+counts passed to the downstream steps come from the `GeneFull` matrix (exons and introns) instead
+of the exonic-only `Gene` matrix.
+
 ## Output
 
 ```
