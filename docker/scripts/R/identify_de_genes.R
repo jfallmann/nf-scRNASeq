@@ -93,9 +93,12 @@ print(sprintf("Collecting pseudobulk counts of %d library file(s) ...", length(p
 pb <- aggregate_SCE_pseudobulk(opt$sce, assay = "RNA")
 countData <- pb$counts
 metadata <- pb$metadata
+colnames(countData) <- normalize_analysis_name(colnames(countData))
+metadata$Sample <- normalize_analysis_name(metadata$Sample)
+metadata$Condition <- normalize_analysis_name(metadata$Condition)
 
 ### set reference condition ###
-ref.Condition <- opt$baseCond
+ref.Condition <- normalize_analysis_name(opt$baseCond)
 conditions <- sort(unique(as.character(metadata$Condition)))
 
 skipped <- list()

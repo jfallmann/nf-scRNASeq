@@ -1,4 +1,9 @@
 ####### FUNCTIONS #########
+normalize_analysis_name <- function(x) {
+    x <- gsub("[-_]", ".", as.character(x), perl = TRUE)
+    gsub("\\.([0-9]+)", "_\\1", x, perl = TRUE)
+}
+
 activity_by_logmeans <- function(signature, sce, fn.scale = scale, ...) {
     # check if logcounts is present
     if (class(sce)[1] == "SingleCellExperiment") {

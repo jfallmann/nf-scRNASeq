@@ -591,7 +591,7 @@ process star_mapping{
     saveAs: {filename -> mappingPublishPath(filename, 'RAWMAPPING/STAR')}
 
     input:
-    tuple val(sampleName), path(r1), path(r2), val(cells_expected), val(chemistry), path(idx), path(whitelist)
+    tuple val(sampleName), path(r1), path(r2), val(cells_expected), val(chemistry), path(idx), path(whitelist), val(cfg)
     
     output:
     path "${sampleName}", emit: name
@@ -611,7 +611,7 @@ process star_mapping{
     script:
     idxdir = idx.toRealPath()
     extraparams = ''
-    starparams = params.starparams
+    starparams = cfg.starparams
     
     chemistry = chemistry.unique()[0]
     cells_expected = cells_expected.unique()[0]
@@ -626,11 +626,11 @@ process star_mapping{
     if (chemistry == "Droplet"){
         log.info("Running StarSolo on unspecified Droplet chemistry, please ensure your STARsolo parameters fit the protocol, please check and adapt default settings in mappers.config file in the conf directory of the nextflow subdirectory of this pipeline. There is no automatic sanity check!")
     } else if (chemistry == 'ScaleBio'){
-        starparams = params.starMappingParamsScale
+        starparams = cfg.starparamsScale
     } else if (chemistry == "Smart"){
         log.info("Running StarSolo on chemistry different than Droplet based, please ensure your STARsolo parameters fit the protocol, please check and adapt default settings in mappers.config file in the conf directory of the nextflow subdirectory of this pipeline. There is no automatic sanity check!")
     }
-    extraparams = Chemistry.starArgs(Chemistry.resolve(chemistry, params))
+    extraparams = cfg.chemArgs
     // Check expected cell count
     if (cells_expected != "NA"){
         cellsexpCR = cells_expected.replaceAll('!', '') + ' 0.99 10'
@@ -647,8 +647,8 @@ process star_mapping{
     // Build params
     starparams = starparams + ' ' + extraparams
 
-    if (chemistry == 'PIPseq' && params.pipseqClip3p != null && params.pipseqClip3p.toString().toInteger() > 0){
-        starparams = starparams + " --clip3pNbases ${params.pipseqClip3p}"
+    if (chemistry == 'PIPseq' && cfg.clip3p > 0){
+        starparams = starparams + " --clip3pNbases ${cfg.clip3p}"
     }
 
     // Check read order
@@ -1124,7 +1124,12 @@ workflow{
                 Ch_cell_data = runCellrangerCount.out.cell_data_raw.mix(useCellrangerData.out.cell_data_from_precomputed_raw)
             }
         }else if (params.mapperbin == 'STAR'){
-            star_mapping(concat_lanes.out.combine( Ch_mapping_idx ).combine( Ch_whitelist ))                    
+            Ch_star_input = concat_lanes.out.combine( Ch_mapping_idx ).combine( Ch_whitelist ).map { it ->
+                def chem = it[4].unique()[0]
+                def clip = (params.pipseqClip3p != null) ? params.pipseqClip3p.toString().toInteger() : 0
+                it + [[starparams: params.starparams, starparamsScale: params.starMappingParamsScale, chemArgs: Chemistry.starArgs(Chemistry.resolve(chem, params)), clip3p: clip]]
+            }
+            star_mapping(Ch_star_input)
             if (flagOn(params.filter, false)){
                 Ch_cell_data = star_mapping.out.cell_data_filtered                
             } else {
